@@ -3,7 +3,7 @@
     --resolver lts-11.5
     --package path
     --package bytestring
-    --package binary-strict
+    --package cereal
     --package placeholders
 -}
 
@@ -14,16 +14,16 @@
 
 module ReadSave where
 
-import Data.Binary
-import Development.Placeholders
 import Data.ByteString hiding (head, readFile)
 import Data.ByteString.Lazy (toStrict)
 import Data.ByteString.Builder
 import qualified Data.ByteString as ByteString
+import Data.Serialize
+import Development.Placeholders
 import Path
 import System.Environment (getArgs)
 
-data FalloutSave = FalloutSave
+data Save = Save
     { characterName :: ByteString
     , saveName      :: ByteString
     , saveTime      :: ByteString
@@ -33,12 +33,16 @@ data FalloutSave = FalloutSave
     , everything    :: ByteString
     }
 
-instance Binary FalloutSave where
+instance Serialize Save where
     get = $(todo "do!")
     put = $(placeholder "put :: FalloutSave -> ByteString is not yet defined.")
 
 main :: IO ()
-main = head <$> getArgs >>= parseAbsFile >>= fmap parseRaw . readRaw >>= print
+main = do
+    [arg] <- getArgs
+    p <- parseAbsFile arg
+    raw <- readRaw p
+    either (ioError . userError) return . runGet checkSignature $ raw
 
 -- % ./ReadSave.hs ~/.wine/fallout/drive_c/Fallout/data/SAVEGAME/SLOT01/SAVE.DAT
 -- "03666500"
@@ -46,9 +50,9 @@ main = head <$> getArgs >>= parseAbsFile >>= fmap parseRaw . readRaw >>= print
 readRaw :: Path Abs File -> IO ByteString
 readRaw = ByteString.readFile . fromAbsFile
 
-parseRaw :: ByteString -> ByteString
-parseRaw = toStrict . toLazyByteString . byteStringHex
-         . ByteString.take 4 . ByteString.drop 2
-         . snd . breakSubstring "\0\0" . ByteString.drop 0x00007f40
-
-
+checkSignature :: Get ()
+checkSignature = do
+    signature <- lookAhead (getBytes 0x12)
+    if signature /= "FALLOUT SAVE FILE\NUL"
+    then fail $ "Wrong signature: " ++ show signature
+    else return ()
