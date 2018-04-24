@@ -20,6 +20,7 @@ module ReadSave where
 -- falloutmods.wikia.com/wiki/SAVE.DAT_File_Format
 
 import Control.Applicative
+import Control.Exception
 import Control.Monad (void, guard)
 import Data.ByteString hiding (head, readFile, length)
 import Data.ByteString.Lazy (toStrict)
@@ -28,7 +29,7 @@ import qualified Data.ByteString as ByteString
 import Data.Serialize
 import Development.Placeholders
 import Path
-import System.Environment (getArgs)
+import System.Environment (getArgs, getEnv)
 
 dropTrailingZeroes :: ByteString -> ByteString
 dropTrailingZeroes = ByteString.takeWhile (/= 0)
@@ -123,8 +124,23 @@ main = do
     save <- readSave arg
     print $ header save
 
+tryParseDir :: FilePath -> IO (Path Abs Dir)
+tryParseDir s = do
+    perchanceParseAbsResult <- tryJust (\x -> case x of
+        InvalidAbsDir _ -> Just ()
+        _ -> Nothing
+        ) (parseAbsDir s)
+    case perchanceParseAbsResult of
+        Left _ -> do
+            cwd <- getEnv "PWD" >>= parseAbsDir
+            (cwd </>) <$> parseRelDir s
+        Right p -> return p
+
 readSave :: FilePath -> IO Save
-readSave p = parseAbsFile p >>= readRaw >>= either fail return . runGet get
+readSave p = do
+    saveFileName <- parseRelFile "SAVE.DAT"
+    path <- (</> saveFileName) <$> tryParseDir p
+    readRaw path >>= either fail return . runGet get
 
 -- % ./ReadSave.hs ~/.wine/fallout/drive_c/Fallout/data/SAVEGAME/SLOT01/SAVE.DAT
 -- "03666500"
