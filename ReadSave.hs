@@ -13,6 +13,7 @@
   , NamedFieldPuns
   , TypeSynonymInstances
   , FlexibleInstances
+  , RecordWildCards
   #-}
 
 module ReadSave where
@@ -22,50 +23,67 @@ module ReadSave where
 import Control.Applicative
 import Control.Exception
 import Control.Monad (void, guard)
+import Data.Word
 import Data.ByteString hiding (head, readFile, length)
 import Data.ByteString.Lazy (toStrict)
 import Data.ByteString.Builder
 import qualified Data.ByteString as ByteString
 import Data.Serialize
+import Data.Semigroup
 import Development.Placeholders
 import System.FilePath
 import System.Environment (getArgs, getEnv)
 
 dropTrailingZeroes :: ByteString -> ByteString
-dropTrailingZeroes = ByteString.takeWhile (/= 0)
+dropTrailingZeroes = fst . spanEnd (== 0)
+
+replace :: ByteString -> Int -> ByteString -> ByteString
+replace source offset replacement = prefix <> replacement <> suffix
+  where
+    prefix = ByteString.take offset source 
+    suffix = ByteString.drop (offset + ByteString.length replacement) source
+
+fix :: Int -> ByteString -> ByteString -> ByteString
+fix offset replacement source = replace source offset replacement
 
 data Save = Save
     { header :: Header
     , gVars  :: ByteString
     , maps   :: [ByteString]
-    , everything :: ByteString
+    , allSave :: ByteString
     } deriving Show
 
 instance Serialize Save where
     get = do
-        everything <- lookAhead $ getBytes =<< remaining
+        allSave <- lookAhead $ getBytes =<< remaining
         checkSignature
         header <- get :: Get Header
         gVars <- getGVars
         maps <- getMaps
         skip =<< remaining
-        return Save { header, gVars, maps, everything }
+        return Save { header, gVars, maps, allSave }
 
-    put = $(placeholder "put :: FalloutSave -> ByteString is not yet defined.")
+    put Save{..} = putByteString
+                 $ replace allSave 0x0 (runPut $ put fixedHeader)
+      where
+        fixedHeader = header { allHeader = ByteString.take 0x7563 allSave }
 
 data Header = Header
-    { version :: (Int, Int)
+    { version :: (Word16, Word16)
     , characterName :: ByteString
     , saveName      :: ByteString
     , saveTime      :: ByteString
-    , gameTime    :: Int
+    , gameTime    :: Word32
+    , mapNumber :: Word32
     , mapName :: ByteString
+    , allHeader :: ByteString
     } deriving Show
 
 instance Serialize Header where
 
     get = label "header" . isolate 0x7563 $ do
         checkSignature
+        allHeader <- lookAhead $ getBytes 0x7563
         skip 0x0018
         versionMajor  <- getWord16be
         versionMinor  <- getWord16be
@@ -80,9 +98,17 @@ instance Serialize Header where
         mapName       <- dropTrailingZeroes <$> getBytes 0x0010
         pic           <- getBytes 0x7460
         skip 0x0080
-        return $ Header { characterName, saveName, saveTime, mapName, version, gameTime }
+        return $ Header { characterName, saveName, saveTime, mapNumber, mapName, version
+            , gameTime, allHeader = "" }
 
-    put = undefined
+    put Header{..} = putByteString
+                   $ fix 0x18 (runPut $ putWord16be (fst version) >> putWord16be (snd version))
+                   . fix 0x1d characterName
+                   . fix 0x3d saveName
+                   . fix 0x6b (runPut $ putWord32be gameTime)
+                   . fix 0x6f (runPut $ putWord32be mapNumber)
+                   . fix 0x73 mapName
+                   $ allHeader
 
 checkSignature :: Get ()
 checkSignature = do
@@ -94,7 +120,7 @@ checkSignature = do
 function1 :: Get ()
 function1 = void getWord32be
 
-getGVars = getBytes 0x9d9
+getGVars = getBytes 0x9d9  -- I wonder why it's odd. It should be an array of Word32, thus even.
 
 getNonZeroWord8 = do
     word8 <- getWord8
