@@ -126,6 +126,3 @@ main = do
 
 readSave :: FilePath -> IO Save
 readSave p = ByteString.readFile (p </> "SAVE.DAT") >>= either fail return . runGet get
-
--- % ./ReadSave.hs ~/.wine/fallout/drive_c/Fallout/data/SAVEGAME/SLOT01/SAVE.DAT
--- "03666500"
