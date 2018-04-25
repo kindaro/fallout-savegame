@@ -7,32 +7,30 @@
     --package placeholders
 -}
 
-{-# LANGUAGE
-    OverloadedStrings
-  , TemplateHaskell
-  , NamedFieldPuns
-  , TypeSynonymInstances
-  , FlexibleInstances
-  , RecordWildCards
-  #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE NamedFieldPuns       #-}
+{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE RecordWildCards      #-}
+{-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 
 module ReadSave where
 
 -- falloutmods.wikia.com/wiki/SAVE.DAT_File_Format
 
-import Control.Applicative
-import Control.Exception
-import Control.Monad (void, guard)
-import Data.Word
-import Data.ByteString hiding (head, readFile, length)
-import Data.ByteString.Lazy (toStrict)
-import Data.ByteString.Builder
-import qualified Data.ByteString as ByteString
-import Data.Serialize
-import Data.Semigroup
-import Development.Placeholders
-import System.FilePath
-import System.Environment (getArgs, getEnv)
+import           Control.Applicative
+import           Control.Exception
+import           Control.Monad            (guard, void)
+import           Data.ByteString          hiding (head, length, readFile)
+import qualified Data.ByteString          as ByteString
+import           Data.ByteString.Builder
+import           Data.ByteString.Lazy     (toStrict)
+import           Data.Semigroup
+import           Data.Serialize
+import           Data.Word
+import           Development.Placeholders
+import           System.Environment       (getArgs, getEnv)
+import           System.FilePath
 
 dropTrailingZeroes :: ByteString -> ByteString
 dropTrailingZeroes = fst . spanEnd (== 0)
@@ -40,16 +38,16 @@ dropTrailingZeroes = fst . spanEnd (== 0)
 replace :: ByteString -> Int -> ByteString -> ByteString
 replace source offset replacement = prefix <> replacement <> suffix
   where
-    prefix = ByteString.take offset source 
+    prefix = ByteString.take offset source
     suffix = ByteString.drop (offset + ByteString.length replacement) source
 
 fix :: Int -> ByteString -> ByteString -> ByteString
 fix offset replacement source = replace source offset replacement
 
 data Save = Save
-    { header :: Header
-    , gVars  :: ByteString
-    , maps   :: [ByteString]
+    { header  :: Header
+    , gVars   :: ByteString
+    , maps    :: [ByteString]
     , allSave :: ByteString
     } deriving Show
 
@@ -69,14 +67,14 @@ instance Serialize Save where
         fixedHeader = header { allHeader = ByteString.take 0x7563 allSave }
 
 data Header = Header
-    { version :: (Word16, Word16)
+    { version       :: (Word16, Word16)
     , characterName :: ByteString
     , saveName      :: ByteString
     , saveTime      :: ByteString
-    , gameTime    :: Word32
-    , mapNumber :: Word32
-    , mapName :: ByteString
-    , allHeader :: ByteString
+    , gameTime      :: Word32
+    , mapNumber     :: Word32
+    , mapName       :: ByteString
+    , allHeader     :: ByteString
     } deriving Show
 
 instance Serialize Header where
