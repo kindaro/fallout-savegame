@@ -1,7 +1,7 @@
 #!/usr/bin/env stack
 {- stack runghc
     --resolver lts-11.5
-    --package path
+    --package filepath
     --package bytestring
     --package cereal
     --package placeholders
@@ -28,7 +28,7 @@ import Data.ByteString.Builder
 import qualified Data.ByteString as ByteString
 import Data.Serialize
 import Development.Placeholders
-import Path
+import System.FilePath
 import System.Environment (getArgs, getEnv)
 
 dropTrailingZeroes :: ByteString -> ByteString
@@ -124,26 +124,8 @@ main = do
     save <- readSave arg
     print $ header save
 
-tryParseDir :: FilePath -> IO (Path Abs Dir)
-tryParseDir s = do
-    perchanceParseAbsResult <- tryJust (\x -> case x of
-        InvalidAbsDir _ -> Just ()
-        _ -> Nothing
-        ) (parseAbsDir s)
-    case perchanceParseAbsResult of
-        Left _ -> do
-            cwd <- getEnv "PWD" >>= parseAbsDir
-            (cwd </>) <$> parseRelDir s
-        Right p -> return p
-
 readSave :: FilePath -> IO Save
-readSave p = do
-    saveFileName <- parseRelFile "SAVE.DAT"
-    path <- (</> saveFileName) <$> tryParseDir p
-    readRaw path >>= either fail return . runGet get
+readSave p = ByteString.readFile (p </> "SAVE.DAT") >>= either fail return . runGet get
 
 -- % ./ReadSave.hs ~/.wine/fallout/drive_c/Fallout/data/SAVEGAME/SLOT01/SAVE.DAT
 -- "03666500"
-
-readRaw :: Path Abs File -> IO ByteString
-readRaw = ByteString.readFile . fromAbsFile
