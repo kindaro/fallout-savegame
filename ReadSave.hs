@@ -49,7 +49,7 @@ data Save = Save
     , gVars   :: ByteString
     , maps    :: [ByteString]
     , allSave :: ByteString
-    } deriving Show
+    } deriving (Show, Eq)
 
 instance Serialize Save where
     get = do
@@ -75,7 +75,7 @@ data Header = Header
     , mapNumber     :: Word32
     , mapName       :: ByteString
     , allHeader     :: ByteString
-    } deriving Show
+    } deriving (Show, Eq)
 
 instance Serialize Header where
 
