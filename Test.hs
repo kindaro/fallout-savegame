@@ -41,6 +41,7 @@ exampleHeader = Header
     , saveName = "Zero save."
     , saveTime = "\NUL\ETB\NUL\EOT\a\226\NUL\NUL\NUL\RS"
     , gameTime = 264606
+    , mapLevel = 0
     , mapNumber = 35
     , mapName = "V13ENT.sav"
     , allHeader = ""

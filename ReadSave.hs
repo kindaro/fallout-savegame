@@ -72,7 +72,8 @@ data Header = Header
     , saveName      :: ByteString
     , saveTime      :: ByteString
     , gameTime      :: Word32
-    , mapNumber     :: Word32
+    , mapLevel      :: Word16
+    , mapNumber     :: Word16
     , mapName       :: ByteString
     , allHeader     :: ByteString
     } deriving (Show, Eq)
@@ -92,11 +93,12 @@ instance Serialize Header where
         saveTime      <- getBytes 0x000a
         someTime      <- getBytes 0x0006
         gameTime      <- fromIntegral <$> getWord32be
-        mapNumber     <- getWord32be
+        mapLevel      <- getWord16be
+        mapNumber     <- getWord16be
         mapName       <- dropTrailingZeroes <$> getBytes 0x0010
         pic           <- getBytes 0x7460
         skip 0x0080
-        return $ Header { characterName, saveName, saveTime, mapNumber, mapName, version
+        return $ Header { characterName, saveName, saveTime, mapLevel, mapNumber, mapName, version
             , gameTime, allHeader = "" }
 
     put Header{..} = putByteString
@@ -104,7 +106,8 @@ instance Serialize Header where
                    . fix 0x1d characterName
                    . fix 0x3d saveName
                    . fix 0x6b (runPut $ putWord32be gameTime)
-                   . fix 0x6f (runPut $ putWord32be mapNumber)
+                   . fix 0x6f (runPut $ putWord16be mapLevel)
+                   . fix 0x71 (runPut $ putWord16be mapNumber)
                    . fix 0x73 mapName
                    $ allHeader
 
