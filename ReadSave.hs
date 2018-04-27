@@ -41,6 +41,10 @@ replace source offset replacement = prefix <> replacement <> suffix
 fix :: Int -> ByteString -> ByteString -> ByteString
 fix offset replacement source = replace source offset replacement
 
+safelyPadToLength :: Int -> ByteString -> ByteString
+safelyPadToLength n s = let s' = ByteString.take (n - 1) s
+                        in  s' <> (ByteString.replicate (n - ByteString.length s') 0)
+
 data Save = Save
     { header  :: Header
     , gVars   :: ByteString
@@ -106,7 +110,7 @@ instance Serialize Header where
 
     put Header{..} = putByteString
                    $ fix 0x18 (runPut $ putWord16be (fst version) >> putWord16be (snd version))
-                   . fix 0x1d characterName
+                   . fix 0x1d (safelyPadToLength 0x20 characterName)
                    . fix 0x3d saveName
                    . fix 0x6b (runPut $ putWord32be . fromMaybe (error "Invalid timestamp!")
                                       . fromTimestamp $ gameTime)
