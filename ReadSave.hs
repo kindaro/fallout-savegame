@@ -4,14 +4,13 @@
     --package filepath
     --package bytestring
     --package cereal
-    --package placeholders
+    --package time
 -}
 
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE NamedFieldPuns       #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE RecordWildCards      #-}
-{-# LANGUAGE TemplateHaskell      #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
 module ReadSave where
@@ -20,17 +19,22 @@ module ReadSave where
 
 import           Control.Applicative
 import           Control.Exception
-import           Control.Monad            (guard, void)
-import           Data.ByteString          hiding (head, length, readFile)
-import qualified Data.ByteString          as ByteString
+import           Control.Monad           (guard, void)
+import           Data.ByteString         hiding (head, length, readFile)
+import qualified Data.ByteString         as ByteString
 import           Data.ByteString.Builder
-import           Data.ByteString.Lazy     (toStrict)
+import           Data.ByteString.Lazy    (toStrict)
+import           Data.Maybe
 import           Data.Semigroup
 import           Data.Serialize
+import           Data.Time.Calendar
+import           Data.Types.Injective
+import           Data.Types.Isomorphic
 import           Data.Word
-import           Development.Placeholders
-import           System.Environment       (getArgs, getEnv)
+import           System.Environment      (getArgs, getEnv)
 import           System.FilePath
+
+import           Timestamp
 
 dropTrailingZeroes :: ByteString -> ByteString
 dropTrailingZeroes = fst . spanEnd (== 0)
@@ -71,7 +75,7 @@ data Header = Header
     , characterName :: ByteString
     , saveName      :: ByteString
     , saveTime      :: ByteString
-    , gameTime      :: Word32
+    , gameTime      :: Timestamp
     , mapLevel      :: Word16
     , mapNumber     :: Word16
     , mapName       :: ByteString
@@ -91,8 +95,12 @@ instance Serialize Header where
         characterName <- dropTrailingZeroes <$> getBytes 0x0020
         saveName      <- dropTrailingZeroes <$> getBytes 0x001e
         saveTime      <- getBytes 0x000a
-        someTime      <- getBytes 0x0006
-        gameTime      <- fromIntegral <$> getWord32be
+        gameMonth     <- fromIntegral <$> getWord16be
+        gameDay       <- fromIntegral <$> getWord16be
+        gameYear      <- fromIntegral <$> getWord16be
+        let gameDate = fromMaybe ( error $ "In-game date is not valid." )
+                                 $ fromGregorianValid gameYear gameMonth gameDay
+        gameTime      <- toTimestamp <$> getWord32be
         mapLevel      <- getWord16be
         mapNumber     <- getWord16be
         mapName       <- dropTrailingZeroes <$> getBytes 0x0010
@@ -105,7 +113,8 @@ instance Serialize Header where
                    $ fix 0x18 (runPut $ putWord16be (fst version) >> putWord16be (snd version))
                    . fix 0x1d characterName
                    . fix 0x3d saveName
-                   . fix 0x6b (runPut $ putWord32be gameTime)
+                   . fix 0x6b (runPut $ putWord32be . fromMaybe (error "Invalid timestamp!")
+                                      . fromTimestamp $ gameTime)
                    . fix 0x6f (runPut $ putWord16be mapLevel)
                    . fix 0x71 (runPut $ putWord16be mapNumber)
                    . fix 0x73 mapName
