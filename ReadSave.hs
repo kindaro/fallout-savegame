@@ -155,3 +155,5 @@ getMaps = label "maps" $ do
 
 readSave :: FilePath -> IO Save
 readSave p = ByteString.readFile (p </> "SAVE.DAT") >>= either fail return . runGet get
+
+writeSave save p = ByteString.writeFile (p </> "SAVE.DAT") (runPut . put $ save)

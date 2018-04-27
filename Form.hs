@@ -44,11 +44,11 @@ form = newForm
     ]
 
 main = do
-    [arg] <- getArgs
-    save <- readSave arg
+    [slot] <- getArgs
+    save <- readSave slot
 
-    save' <- defaultMain app (form $ header save)
-    print $ formState save'
+    header' <- formState <$> defaultMain app (form $ header save)
+    writeSave (save { header = header' }) slot
 
 app :: App (Form Header e FormLabels) e FormLabels
 app = App { appDraw = pure . renderForm
