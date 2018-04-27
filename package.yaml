@@ -1,1 +1,18 @@
-{}
+dependencies:
+    - base
+    - filepath
+    - bytestring
+    - cereal
+    - time
+    - microlens-platform
+    - template-haskell
+
+tests:
+    test:
+        main: Test
+        dependencies:
+            - tasty
+            - tasty-quickcheck
+            - tasty-hunit
+            - tasty-golden
+            - props

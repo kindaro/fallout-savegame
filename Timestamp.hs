@@ -1,10 +1,3 @@
-#!/usr/bin/env stack
-{- stack runghc
-    --resolver lts-11.5
-    --package bytestring
-    --package cereal
-    --package time
--}
 
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}

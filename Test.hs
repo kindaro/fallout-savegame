@@ -1,14 +1,3 @@
-#!/usr/bin/env stack
-{- stack runghc
-    --resolver lts-11.5
-    --package filepath
-    --package bytestring
-    --package tasty
-    --package tasty-quickcheck
-    --package tasty-hunit
-    --package tasty-golden
-    --package props
--}
 
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}

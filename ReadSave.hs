@@ -1,16 +1,9 @@
-#!/usr/bin/env stack
-{- stack runghc
-    --resolver lts-11.5
-    --package filepath
-    --package bytestring
-    --package cereal
-    --package time
--}
 
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE NamedFieldPuns       #-}
 {-# LANGUAGE OverloadedStrings    #-}
 {-# LANGUAGE RecordWildCards      #-}
+{-# LANGUAGE TemplateHaskell      #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
 module ReadSave where
@@ -19,19 +12,19 @@ module ReadSave where
 
 import           Control.Applicative
 import           Control.Exception
-import           Control.Monad           (guard, void)
-import           Data.ByteString         hiding (head, length, readFile)
-import qualified Data.ByteString         as ByteString
+import           Control.Monad              (guard, void)
+import           Data.ByteString            hiding (head, length, readFile)
+import qualified Data.ByteString            as ByteString
 import           Data.ByteString.Builder
-import           Data.ByteString.Lazy    (toStrict)
+import           Data.ByteString.Lazy       (toStrict)
 import           Data.Maybe
 import           Data.Semigroup
 import           Data.Serialize
 import           Data.Time.Calendar
-import           Data.Types.Injective
-import           Data.Types.Isomorphic
 import           Data.Word
-import           System.Environment      (getArgs, getEnv)
+import           Language.Haskell.TH.Syntax
+import           Lens.Micro.Platform
+import           System.Environment         (getArgs, getEnv)
 import           System.FilePath
 
 import           Timestamp
@@ -55,6 +48,20 @@ data Save = Save
     , allSave :: ByteString
     } deriving (Show, Eq)
 
+data Header = Header
+    { version       :: (Word16, Word16)
+    , characterName :: ByteString
+    , saveName      :: ByteString
+    , saveTime      :: ByteString
+    , gameTime      :: Timestamp
+    , mapLevel      :: Word16
+    , mapNumber     :: Word16
+    , mapName       :: ByteString
+    , allHeader     :: ByteString
+    } deriving (Show, Eq)
+
+flip makeLensesWith ''Header $ (lensRules & lensField .~ \_ _ x -> [TopName . mkName $ '_': nameBase x])
+
 instance Serialize Save where
     get = do
         allSave <- lookAhead $ getBytes =<< remaining
@@ -69,18 +76,6 @@ instance Serialize Save where
                  $ replace allSave 0x0 (runPut $ put fixedHeader)
       where
         fixedHeader = header { allHeader = ByteString.take 0x7563 allSave }
-
-data Header = Header
-    { version       :: (Word16, Word16)
-    , characterName :: ByteString
-    , saveName      :: ByteString
-    , saveTime      :: ByteString
-    , gameTime      :: Timestamp
-    , mapLevel      :: Word16
-    , mapNumber     :: Word16
-    , mapName       :: ByteString
-    , allHeader     :: ByteString
-    } deriving (Show, Eq)
 
 instance Serialize Header where
 
