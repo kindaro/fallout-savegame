@@ -149,11 +149,5 @@ getMaps = label "maps" $ do
     guard (length maps == fromIntegral mapsNumber)
     return maps
 
-main :: IO ()
-main = do
-    [arg] <- getArgs
-    save <- readSave arg
-    print $ header save
-
 readSave :: FilePath -> IO Save
 readSave p = ByteString.readFile (p </> "SAVE.DAT") >>= either fail return . runGet get

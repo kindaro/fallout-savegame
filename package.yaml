@@ -6,6 +6,14 @@ dependencies:
     - time
     - microlens-platform
     - template-haskell
+    - brick
+    - vty
+
+executables:
+    interactive:
+        main: Form
+        ghc-options:
+            - -threaded
 
 tests:
     test:

@@ -24,7 +24,7 @@ unit_minute      = 60   * unit_second
 unit_hour        = 60   * unit_minute
 unit_day         = 24   * unit_hour
 
-data Timestamp = Timestamp { day :: Day, time :: TimeOfDay } deriving (Show, Eq)
+data Timestamp = Timestamp { day :: Day, time :: TimeOfDay } deriving (Show, Read, Eq)
 
 instance Serialize Timestamp
   where
