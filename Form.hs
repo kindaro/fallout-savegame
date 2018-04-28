@@ -44,9 +44,11 @@ form = newForm
 main = do
     [slot] <- getArgs
     save <- readSave slot
-
     header' <- formState <$> defaultMain app (form $ header save)
-    writeSave (save { header = header' }) slot
+    let save' = (save { header = header' })
+    if save' == save
+    then putStrLn "No changes made."
+    else writeSave save' slot >> putStrLn "Changes written to disk."
 
 app :: App (Form Header e FormLabels) e FormLabels
 app = App { appDraw = pure . renderForm
