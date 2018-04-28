@@ -12,7 +12,7 @@ module ReadSave where
 
 import           Control.Applicative
 import           Control.Exception
-import           Control.Monad              (guard, void)
+import           Control.Monad              (guard, void, when)
 import           Data.ByteString            hiding (head, length, readFile)
 import qualified Data.ByteString            as ByteString
 import           Data.ByteString.Builder
@@ -43,7 +43,7 @@ fix offset replacement source = replace source offset replacement
 
 safelyPadToLength :: Int -> ByteString -> ByteString
 safelyPadToLength n s = let s' = ByteString.take (n - 1) s
-                        in  s' <> (ByteString.replicate (n - ByteString.length s') 0)
+                        in  s' <> ByteString.replicate (n - ByteString.length s') 0
 
 data Save = Save
     { header  :: Header
@@ -64,7 +64,7 @@ data Header = Header
     , allHeader     :: ByteString
     } deriving (Show, Eq)
 
-flip makeLensesWith ''Header $ (lensRules & lensField .~ \_ _ x -> [TopName . mkName $ '_': nameBase x])
+flip makeLensesWith ''Header $ lensRules & lensField .~ \_ _ x -> [TopName . mkName $ '_': nameBase x]
 
 instance Serialize Save where
     get = do
@@ -97,7 +97,7 @@ instance Serialize Header where
         gameMonth     <- fromIntegral <$> getWord16be
         gameDay       <- fromIntegral <$> getWord16be
         gameYear      <- fromIntegral <$> getWord16be
-        let gameDate = fromMaybe ( error $ "In-game date is not valid." )
+        let gameDate = fromMaybe ( error $ "Header.get: In-game date is not valid." )
                                  $ fromGregorianValid gameYear gameMonth gameDay
         gameTime      <- toTimestamp <$> getWord32be
         mapLevel      <- getWord16be
@@ -122,9 +122,7 @@ instance Serialize Header where
 checkSignature :: Get ()
 checkSignature = do
     signature <- lookAhead (getBytes 0x12)
-    if signature /= "FALLOUT SAVE FILE\NUL"
-    then fail $ "Wrong signature: " ++ show signature
-    else return ()
+    when (signature /= "FALLOUT SAVE FILE\NUL") (fail $ "Wrong signature: " ++ show signature)
 
 function1 :: Get ()
 function1 = void getWord32be
