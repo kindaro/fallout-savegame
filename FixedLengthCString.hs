@@ -43,7 +43,7 @@ instance KnownNat n => Read (FixedLengthCString n) where
         Just t  -> [(t, "")]
 
 instance KnownNat n => Show (FixedLengthCString n) where
-    show = show . ByteString.init . toByteString
+    show = show . fst . spanEnd (== 0) . toByteString
 
 instance forall n. KnownNat n => Serialize (FixedLengthCString n) where
     get = do
