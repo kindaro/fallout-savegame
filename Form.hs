@@ -15,8 +15,6 @@ import           System.Environment
 
 import           ReadSave
 
-data Name = Jack
-
 data FormLabels = VersionField | CharacterNameField | SaveNameField | SaveTimeField | GameTimeField
            | MapLevelField | MapNumberField | MapNameField | AllHeaderField
     deriving (Eq, Ord, Show, Read)
@@ -62,8 +60,6 @@ app = App { appDraw = pure . renderForm
                 _ -> do
                     s' <- handleFormEvent ev s
                     continue s'
-
-
           , appStartEvent = return
           , appAttrMap = const theMap
           }
