@@ -5,6 +5,7 @@
 
 module FixedLengthCString (FixedLengthCString) where
 
+import           Control.Monad
 import           Data.ByteString hiding (length)
 import qualified Data.ByteString as ByteString
 import           Data.Maybe
@@ -47,7 +48,11 @@ instance KnownNat n => Show (FixedLengthCString n) where
 instance forall n. KnownNat n => Serialize (FixedLengthCString n) where
     get = do
         bytes <- getBytes n
-        case fromByteString bytes of
+        let s = ByteString.init bytes
+            t = ByteString.last bytes
+        when (t /= 0)
+            $ error $ "FixedLengthCString.get: Source is not zero terminated: " ++ show bytes
+        case fromByteString s of
             Nothing -> fail "FixedLengthCString.get: Inconsistent length. This should not happen."
             Just t  -> return t
       where n = fromInteger . natVal $ (Proxy :: Proxy n)
