@@ -11,6 +11,12 @@ dependencies:
     - QuickCheck
     - quickcheck-instances
 
+library:
+    exposed-modules:
+        - Timestamp
+        - FixedLengthCString
+        - ReadSave
+
 executables:
     interactive:
         main: Form
@@ -19,8 +25,11 @@ executables:
 
 tests:
     test:
+        source-dirs:
+            - Test
         main: Test
         dependencies:
+            - Fallout
             - tasty
             - tasty-quickcheck
             - tasty-hunit
