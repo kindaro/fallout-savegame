@@ -46,7 +46,7 @@ exampleHeader = Header
     }
 
 main = do
-    defaultMain $ testGroup "* * *" [ testParser, testTimestamp ]
+    defaultMain $ testGroup "* * *" [ testParser, testTimestamp, testFixedLengthCString ]
 
 testParser = testGroup "Parser."
 
@@ -76,4 +76,10 @@ testTimestamp = testGroup "Timestamp."
 
     , testProperty "read & show are an isomorphism."
         $ (show :: Timestamp -> String) `partiallyIsomorphic` readMaybe
+    ]
+
+testFixedLengthCString = testGroup "Fixed length strings."
+
+    [ testProperty "Fixed length strings are ..."
+        $ (show :: FixedLengthCString 10 -> String) `partiallyIsomorphic` readMaybe
     ]
