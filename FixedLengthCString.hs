@@ -68,3 +68,8 @@ instance KnownNat n => Arbitrary (FixedLengthCString n) where
             bs = fromMaybe e (fromByteString . fromString $ s)
         return bs
       where n = fromInteger . natVal $ (Proxy :: Proxy n)
+
+instance KnownNat n => IsString (FixedLengthCString n) where
+    fromString = fromMaybe e . fromByteString . ByteString.take (n - 1) . fromString
+      where n = fromInteger . natVal $ (Proxy :: Proxy n)
+            e = error "FixedLengthCString.fromString: Inconsistent length. This should not happen."
