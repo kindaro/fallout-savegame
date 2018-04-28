@@ -2,7 +2,6 @@
 {-# LANGUAGE DataKinds         #-}
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards   #-}
 
 module Test where
 
@@ -23,7 +22,9 @@ import           FixedLengthCString
 import           ReadSave
 import           Timestamp
 
-exampleIO = readSave "test/SAVEGAME/SLOT06"
+testDir = "test"
+
+exampleIO = readSave (testDir </> "SAVEGAME/SLOT06")
 
 exampleIO' = tweak <$> exampleIO
   where
@@ -53,20 +54,21 @@ testParser = testGroup "Parser."
         $ exampleIO >>= \example -> header example @?= exampleHeader
 
     , goldenVsString "get /= undefined => put . get == id"
-        ("test/SAVEGAME/SLOT06" </> "SAVE.DAT") (fromStrict . runPut . put <$> exampleIO)
+        (testDir </> "SAVEGAME/SLOT06" </> "SAVE.DAT") (fromStrict . runPut . put <$> exampleIO)
 
     , goldenVsString "Tweaked data serializes correctly"
-        ("test/SAVEGAME/SLOT07" </> "SAVE.DAT") (fromStrict . runPut . put <$> exampleIO')
+        (testDir </> "SAVEGAME/SLOT07" </> "SAVE.DAT") (fromStrict . runPut . put <$> exampleIO')
 
     , testCase "Bogus file does not pass signature check."
         $ do
-            x <- try $ readSave "test/SAVEGAME/bogus"
+            x <- try $ readSave (testDir </> "SAVEGAME/bogus")
             when (x /= Left signatureError) (assertFailure (show x))
     ]
   where
-  signatureError = userError "Failed reading: Wrong signature:\
-                   \ \"\\219e-\\248\\ETB\\t\\173\\DC2]\\128y\\218m\\FS\\227\\234\\EMB\"\n\
-                   \Empty call stack\n"
+    signatureError = userError
+        "Failed reading: Wrong signature:\
+        \ \"\\219e-\\248\\ETB\\t\\173\\DC2]\\128y\\218m\\FS\\227\\234\\EMB\"\n\
+        \Empty call stack\n"
 
 testTimestamp = testGroup "Timestamp."
 
