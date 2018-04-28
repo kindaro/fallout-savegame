@@ -23,7 +23,7 @@ import           FixedLengthCString
 import           ReadSave
 import           Timestamp
 
-exampleIO = readSave "Test/SAVEGAME/SLOT06"
+exampleIO = readSave "test/SAVEGAME/SLOT06"
 
 exampleIO' = tweak <$> exampleIO
   where
@@ -45,8 +45,7 @@ exampleHeader = Header
     , allHeader     = ""
     }
 
-main = do
-    defaultMain $ testGroup "* * *" [ testParser, testTimestamp, testFixedLengthCString ]
+main = defaultMain $ testGroup "* * *" [ testParser, testTimestamp, testFixedLengthCString ]
 
 testParser = testGroup "Parser."
 
@@ -54,14 +53,14 @@ testParser = testGroup "Parser."
         $ exampleIO >>= \example -> header example @?= exampleHeader
 
     , goldenVsString "get /= undefined => put . get == id"
-        ("Test/SAVEGAME/SLOT06" </> "SAVE.DAT") (fromStrict . runPut . put <$> exampleIO)
+        ("test/SAVEGAME/SLOT06" </> "SAVE.DAT") (fromStrict . runPut . put <$> exampleIO)
 
     , goldenVsString "Tweaked data serializes correctly"
-        ("Test/SAVEGAME/SLOT07" </> "SAVE.DAT") (fromStrict . runPut . put <$> exampleIO')
+        ("test/SAVEGAME/SLOT07" </> "SAVE.DAT") (fromStrict . runPut . put <$> exampleIO')
 
     , testCase "Bogus file does not pass signature check."
         $ do
-            x <- try $ readSave "Test/SAVEGAME/bogus"
+            x <- try $ readSave "test/SAVEGAME/bogus"
             when (x /= Left signatureError) (assertFailure (show x))
     ]
   where

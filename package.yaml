@@ -19,14 +19,18 @@ library:
 
 executables:
     interactive:
+        source-dirs:
+            - exe
         main: Form
+        dependencies:
+            - Fallout
         ghc-options:
             - -threaded
 
 tests:
     test:
         source-dirs:
-            - Test
+            - test
         main: Test
         dependencies:
             - Fallout
