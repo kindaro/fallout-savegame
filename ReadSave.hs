@@ -1,4 +1,5 @@
 
+{-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE NamedFieldPuns       #-}
 {-# LANGUAGE OverloadedStrings    #-}
@@ -22,15 +23,14 @@ import           Data.Semigroup
 import           Data.Serialize
 import           Data.Time.Calendar
 import           Data.Word
+import           GHC.TypeLits
 import           Language.Haskell.TH.Syntax
 import           Lens.Micro.Platform
 import           System.Environment         (getArgs, getEnv)
 import           System.FilePath
 
+import           FixedLengthCString
 import           Timestamp
-
-dropTrailingZeroes :: ByteString -> ByteString
-dropTrailingZeroes = fst . spanEnd (== 0)
 
 replace :: ByteString -> Int -> ByteString -> ByteString
 replace source offset replacement = prefix <> replacement <> suffix
@@ -41,9 +41,8 @@ replace source offset replacement = prefix <> replacement <> suffix
 fix :: Int -> ByteString -> ByteString -> ByteString
 fix offset replacement source = replace source offset replacement
 
-safelyPadToLength :: Int -> ByteString -> ByteString
-safelyPadToLength n s = let s' = ByteString.take (n - 1) s
-                        in  s' <> ByteString.replicate (n - ByteString.length s') 0
+fix' :: KnownNat n => Int -> FixedLengthCString n -> ByteString -> ByteString
+fix' offset replacement source = replace source offset (runPut . put $ replacement)
 
 data Save = Save
     { header  :: Header
@@ -54,13 +53,13 @@ data Save = Save
 
 data Header = Header
     { version       :: (Word16, Word16)
-    , characterName :: ByteString
-    , saveName      :: ByteString
+    , characterName :: FixedLengthCString 0x20
+    , saveName      :: FixedLengthCString 0x1e
     , saveTime      :: ByteString
     , gameTime      :: Timestamp
     , mapLevel      :: Word16
     , mapNumber     :: Word16
-    , mapName       :: ByteString
+    , mapName       :: FixedLengthCString 0x10
     , allHeader     :: ByteString
     } deriving (Show, Eq)
 
@@ -91,9 +90,9 @@ instance Serialize Header where
         versionMinor  <- getWord16be
         let version = (fromIntegral versionMajor, fromIntegral versionMinor)
         skip 0x0001
-        characterName <- dropTrailingZeroes <$> getBytes 0x0020
-        saveName      <- dropTrailingZeroes <$> getBytes 0x001e
-        saveTime      <- getBytes 0x000a
+        characterName <- get
+        saveName      <- get
+        saveTime      <- getBytes 0x0a
         gameMonth     <- fromIntegral <$> getWord16be
         gameDay       <- fromIntegral <$> getWord16be
         gameYear      <- fromIntegral <$> getWord16be
@@ -102,7 +101,7 @@ instance Serialize Header where
         gameTime      <- toTimestamp <$> getWord32be
         mapLevel      <- getWord16be
         mapNumber     <- getWord16be
-        mapName       <- dropTrailingZeroes <$> getBytes 0x0010
+        mapName       <- get
         pic           <- getBytes 0x7460
         skip 0x0080
         return $ Header { characterName, saveName, saveTime, mapLevel, mapNumber, mapName, version
@@ -110,13 +109,13 @@ instance Serialize Header where
 
     put Header{..} = putByteString
                    $ fix 0x18 (runPut $ putWord16be (fst version) >> putWord16be (snd version))
-                   . fix 0x1d (safelyPadToLength 0x20 characterName)
-                   . fix 0x3d saveName
+                   . fix' 0x1d characterName
+                   . fix' 0x3d saveName
                    . fix 0x6b (runPut $ putWord32be . fromMaybe (error "Invalid timestamp!")
                                       . fromTimestamp $ gameTime)
                    . fix 0x6f (runPut $ putWord16be mapLevel)
                    . fix 0x71 (runPut $ putWord16be mapNumber)
-                   . fix 0x73 mapName
+                   . fix' 0x73 mapName
                    $ allHeader
 
 checkSignature :: Get ()
