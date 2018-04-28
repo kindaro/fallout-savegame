@@ -8,6 +8,8 @@ dependencies:
     - template-haskell
     - brick
     - vty
+    - QuickCheck
+    - quickcheck-instances
 
 executables:
     interactive:
