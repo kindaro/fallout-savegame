@@ -1,3 +1,5 @@
+name: fallout-savegame
+
 dependencies:
     - base
     - filepath
@@ -25,7 +27,7 @@ executables:
             - exe
         main: Form
         dependencies:
-            - Fallout
+            - fallout-savegame
         ghc-options:
             - -threaded
 
@@ -35,7 +37,7 @@ tests:
             - test
         main: Test
         dependencies:
-            - Fallout
+            - fallout-savegame
             - tasty
             - tasty-quickcheck
             - tasty-hunit
