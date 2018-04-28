@@ -52,7 +52,7 @@ instance forall n. KnownNat n => Serialize (FixedLengthCString n) where
             Just t  -> return t
       where n = fromInteger . natVal $ (Proxy :: Proxy n)
 
-    put = put . toByteString
+    put = putByteString . toByteString
 
 instance KnownNat n => Arbitrary (FixedLengthCString n) where
     arbitrary = do
