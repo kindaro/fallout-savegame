@@ -8,13 +8,14 @@
 
 module Timestamp (fromTimestamp, toTimestamp, Timestamp) where
 
-import           Data.Bifunctor      hiding (second)
+import           Data.Bifunctor                 hiding (second)
 import           Data.Serialize
 import           Data.Time.Calendar
 import           Data.Time.Clock
 import           Data.Time.LocalTime
 import           Data.Word
-
+import           Test.QuickCheck.Arbitrary
+import           Test.QuickCheck.Instances.Time
 
 unit_millisecond :: Integer
 unit_millisecond = 1 * 10^9
@@ -50,3 +51,6 @@ toTimestamp deciseconds = Timestamp { day, time }
                 $ (fromIntegral deciseconds * unit_decisecond) `divMod` unit_day
 
 zeroDate = fromGregorian 2161 12 05
+
+instance Arbitrary Timestamp where
+    arbitrary = applyArbitrary2 Timestamp
