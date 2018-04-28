@@ -22,7 +22,11 @@ exampleIO = readSave "SLOT06"
 
 exampleIO' = tweak <$> exampleIO
   where
-    tweak save = save { header = (header save) { characterName = "Conglomerate" } }
+    tweak save = save { header = (header save)
+        { characterName = "Slum"
+        , saveName = "Edited save."
+        , gameTime = toTimestamp 23364610
+        } }
 
 exampleHeader = Header
     { version       = (1,2)
