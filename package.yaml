@@ -12,6 +12,8 @@ dependencies:
     - quickcheck-instances
 
 library:
+    source-dirs:
+        - src
     exposed-modules:
         - Timestamp
         - FixedLengthCString
